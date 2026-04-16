@@ -1,0 +1,1034 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Halı Desinatörü</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f5f3ef;
+  --surface: #ffffff;
+  --surface2: #f0ede8;
+  --border: rgba(0,0,0,0.08);
+  --border2: rgba(0,0,0,0.14);
+  --gold: #a07828;
+  --gold2: #7a5a1a;
+  --text: #1a1612;
+  --text2: #5a4e42;
+  --text3: #9a8e80;
+  --teal: #1d9a7a;
+  --teal2: #25c49a;
+  --disabled: #c8c0b4;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+#header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 24px; background: var(--surface);
+  border-bottom: 1px solid var(--border2); position: sticky; top: 0; z-index: 100;
+}
+#header h1 { font-family: 'Playfair Display', serif; font-size: 20px; font-weight: 500; color: var(--gold2); }
+#header h1 span { color: var(--text3); font-size: 12px; font-family: 'DM Sans', sans-serif; font-weight: 300; margin-left: 8px; }
+
+/* STEP NAV */
+#steps {
+  display: flex; background: var(--surface);
+  border-bottom: 1px solid var(--border); padding: 0;
+  overflow-x: auto;
+}
+.step {
+  display: flex; align-items: center; gap: 10px;
+  padding: 14px 22px; cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all .15s; user-select: none; white-space: nowrap;
+  opacity: 0.45; pointer-events: none;
+}
+.step.done { opacity: 1; pointer-events: auto; }
+.step.active { opacity: 1; pointer-events: auto; border-bottom-color: var(--gold); }
+.step-num {
+  width: 22px; height: 22px; border-radius: 50%;
+  background: var(--surface2); border: 1.5px solid var(--border2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700; color: var(--text3); flex-shrink: 0;
+  transition: all .15s;
+}
+.step.active .step-num { background: var(--gold); border-color: var(--gold); color: #fff; }
+.step.done .step-num { background: var(--teal); border-color: var(--teal); color: #fff; }
+.step-label { font-size: 13px; font-weight: 500; color: var(--text2); }
+.step.active .step-label { color: var(--gold2); }
+.step-arrow { color: var(--border2); font-size: 16px; padding: 0 4px; }
+
+/* PANELS */
+.panel { display: none; padding: 24px; }
+.panel.active { display: block; }
+
+/* UPLOAD */
+#upload-zone {
+  border: 2px dashed var(--border2); border-radius: 12px;
+  padding: 52px 24px; text-align: center; cursor: pointer;
+  transition: border-color .2s, background .2s;
+  background: var(--surface); max-width: 600px; margin: 0 auto;
+}
+#upload-zone:hover, #upload-zone.drag { border-color: var(--gold); background: var(--surface2); }
+#upload-zone p { color: var(--text2); font-size: 14px; margin-bottom: 6px; }
+#upload-zone small { color: var(--text3); font-size: 12px; }
+#file-input { display: none; }
+
+/* LAYOUT */
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+@media(max-width:860px){ .two-col,.three-col { grid-template-columns: 1fr; } }
+
+/* CARD */
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px 20px; }
+.card-title { font-size: 11px; font-weight: 500; letter-spacing: 1px; text-transform: uppercase; color: var(--gold); margin-bottom: 14px; }
+
+/* FORM */
+label { font-size: 12px; color: var(--text2); display: block; margin-bottom: 4px; }
+input[type=number] {
+  width: 100%; padding: 7px 10px; font-size: 13px; font-family: 'DM Sans', sans-serif;
+  background: var(--surface2); color: var(--text); border: 1px solid var(--border2);
+  border-radius: 6px; outline: none; transition: border-color .15s;
+}
+input[type=number]:focus { border-color: var(--gold); }
+input[type=range] {
+  width: 100%; height: 4px; appearance: none;
+  background: var(--border2); border: none; border-radius: 2px; cursor: pointer; padding: 0; outline: none;
+}
+input[type=range]::-webkit-slider-thumb { appearance: none; width: 14px; height: 14px; border-radius: 50%; background: var(--gold); cursor: pointer; }
+select {
+  width: 100%; padding: 7px 10px; font-size: 13px; font-family: 'DM Sans', sans-serif;
+  background: var(--surface2); color: var(--text); border: 1px solid var(--border2);
+  border-radius: 6px; outline: none; cursor: pointer;
+}
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+.divider { border: none; border-top: 1px solid var(--border); margin: 14px 0; }
+.slider-row { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.slider-row > label { min-width: 100px; font-size: 12px; color: var(--text2); margin: 0; }
+.sv { min-width: 32px; font-size: 12px; font-weight: 500; text-align: right; color: var(--text); }
+
+/* BUTTONS */
+.btn {
+  padding: 8px 18px; font-size: 13px; font-family: 'DM Sans', sans-serif;
+  font-weight: 500; border: 1px solid var(--border2); border-radius: 6px;
+  background: transparent; color: var(--text2); cursor: pointer; transition: all .15s;
+}
+.btn:hover { background: var(--surface2); color: var(--text); border-color: var(--gold); }
+.btn-primary { background: var(--gold); color: #fff; border-color: var(--gold); }
+.btn-primary:hover { background: var(--gold2); color: #fff; border-color: var(--gold2); }
+.btn-sm { padding: 5px 12px; font-size: 12px; }
+.btn-teal { background: var(--teal); color: #fff; border-color: transparent; }
+.btn-teal:hover { background: var(--teal2); color: #fff; }
+.btn-next {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 10px 22px; font-size: 14px; font-weight: 500;
+  background: var(--gold); color: #fff; border: none;
+  border-radius: 8px; cursor: pointer; transition: all .15s; margin-top: 16px;
+}
+.btn-next:hover { background: var(--gold2); }
+.btn-next svg { transition: transform .15s; }
+.btn-next:hover svg { transform: translateX(3px); }
+
+/* CANVAS */
+.canvas-wrap {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 8px; overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+  min-height: 180px; position: relative;
+}
+.canvas-wrap canvas { display: block; max-width: 100%; max-height: 100%; width: auto; height: auto; }
+.canvas-label {
+  position: absolute; top: 8px; left: 10px;
+  font-size: 10px; font-weight: 500; letter-spacing: 0.8px; text-transform: uppercase;
+  color: var(--text3); background: var(--surface); padding: 3px 7px;
+  border-radius: 4px; border: 1px solid var(--border); z-index: 5;
+}
+.canvas-ph {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  height: 200px; color: var(--text3); font-size: 13px; gap: 8px; padding: 20px; text-align: center;
+}
+
+/* STAT */
+.stat-box { background: var(--surface2); border-radius: 8px; padding: 12px 14px; text-align: center; border: 1px solid var(--border); }
+.stat-box .val { font-size: 20px; font-weight: 500; color: var(--gold2); }
+.stat-box .lbl { font-size: 11px; color: var(--text3); margin-top: 2px; }
+
+/* FORMULA */
+.formula {
+  background: var(--surface2); border-radius: 8px; padding: 14px 16px;
+  font-size: 13px; color: var(--text2); line-height: 2;
+  border-left: 3px solid var(--gold); margin-bottom: 14px;
+}
+.formula strong { color: var(--gold2); }
+
+/* COLOR LIST */
+#color-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.color-item {
+  display: flex; align-items: center; gap: 7px;
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 6px; padding: 5px 10px; cursor: pointer; transition: border-color .15s;
+}
+.color-item:hover { border-color: var(--gold); }
+.color-dot { width: 20px; height: 20px; border-radius: 4px; flex-shrink: 0; border: 1px solid rgba(0,0,0,0.1); }
+.color-hex { font-size: 12px; color: var(--text2); font-family: monospace; }
+.color-pct { font-size: 11px; color: var(--text3); }
+.copy-tag { font-size: 10px; background: var(--gold); color: #fff; padding: 2px 6px; border-radius: 3px; font-weight: 500; opacity: 0; transition: opacity .15s; }
+.color-item:hover .copy-tag { opacity: 1; }
+
+/* STEP BANNER */
+.step-banner {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; padding: 10px 16px; margin-bottom: 20px;
+  font-size: 13px; color: var(--text2);
+}
+.step-banner .badge {
+  background: var(--gold); color: #fff; font-size: 11px; font-weight: 700;
+  padding: 2px 8px; border-radius: 12px; white-space: nowrap;
+}
+.step-banner .badge.done { background: var(--teal); }
+
+/* LOCK BOX */
+#lock-box { width:18px;height:18px;border:1.5px solid var(--border2);border-radius:4px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .15s;flex-shrink:0; }
+
+/* ZOOM VIEWER */
+#cv-orig, #cv-proc { will-change: transform; }
+
+/* HEAT */
+#heat-legend { display: flex; align-items: center; gap: 10px; margin-top: 14px; }
+#heat-legend span { font-size: 11px; color: var(--text3); white-space: nowrap; }
+#heat-grad { flex: 1; height: 12px; border-radius: 4px; background: linear-gradient(to right,#042C53,#1D9E75,#EF9F27,#E24B4A,#ffffff); }
+
+/* TOAST */
+#toast {
+  position: fixed; bottom: 24px; right: 24px; background: var(--teal); color: #fff;
+  padding: 8px 16px; border-radius: 6px; font-size: 13px;
+  opacity: 0; pointer-events: none; transition: opacity .3s; z-index: 9999;
+}
+#toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<div id="header">
+  <h1>Halı Desinatörü <span>Dijital Desen Hazırlama</span></h1>
+  <button class="btn btn-sm" onclick="document.getElementById('file-input').click()">+ Yeni Görsel</button>
+  <input type="file" id="file-input" accept="image/*,.bmp">
+</div>
+
+<!-- STEP NAV -->
+<div id="steps">
+  <div class="step active" id="step-0" onclick="goStep(0)">
+    <div class="step-num">1</div>
+    <span class="step-label">Görsel Yükle</span>
+  </div>
+  <span class="step-arrow">›</span>
+  <div class="step" id="step-1" onclick="goStep(1)">
+    <div class="step-num">2</div>
+    <span class="step-label">Renk İndirgeme <span style="font-size:10px;background:var(--surface2);border:1px solid var(--border2);color:var(--text3);padding:1px 5px;border-radius:8px;font-weight:400;">isteğe bağlı</span></span>
+  </div>
+  <span class="step-arrow">›</span>
+  <div class="step" id="step-2" onclick="goStep(2)">
+    <div class="step-num">3</div>
+    <span class="step-label">Pikselleştir & Ölçek</span>
+  </div>
+  <span class="step-arrow">›</span>
+  <div class="step" id="step-3" onclick="goStep(3)">
+    <div class="step-num">4</div>
+    <span class="step-label">Karşılaştır & Isı Haritası</span>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════ -->
+<!-- PANEL 0: GÖRSEL YÜKLE                      -->
+<!-- ══════════════════════════════════════════ -->
+<div class="panel active" id="p0">
+  <div id="upload-zone">
+    <svg width="52" height="52" viewBox="0 0 52 52" fill="none" style="margin:0 auto 14px;display:block;">
+      <rect x="4" y="10" width="44" height="34" rx="4" stroke="#a07828" stroke-width="1.5"/>
+      <circle cx="17" cy="21" r="5" stroke="#a07828" stroke-width="1.5"/>
+      <path d="M4 36 l13-11 9 9 9-7 13 11" stroke="#a07828" stroke-width="1.5" fill="none"/>
+      <path d="M26 2 v14 M21 7 l5-5 5 5" stroke="#a07828" stroke-width="1.5" fill="none"/>
+    </svg>
+    <p>Halı görselini buraya sürükleyin veya tıklayın</p>
+    <small>PNG, BMP, JPG, TIFF, WEBP desteklenir</small>
+  </div>
+
+  <div id="upload-result" style="display:none; margin-top:24px;">
+    <div class="two-col">
+      <div>
+        <div class="canvas-wrap" style="height:360px;">
+          <span class="canvas-label">Yüklenen Görsel</span>
+          <canvas id="c-orig" style="max-height:360px;"></canvas>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Görsel Bilgisi</div>
+        <div class="three-col" style="margin-bottom:12px;">
+          <div class="stat-box"><div class="val" id="s-ow">—</div><div class="lbl">Genişlik (px)</div></div>
+          <div class="stat-box"><div class="val" id="s-oh">—</div><div class="lbl">Yükseklik (px)</div></div>
+          <div class="stat-box"><div class="val" id="s-rat">—</div><div class="lbl">En/Boy</div></div>
+        </div>
+        <p style="font-size:12px;color:var(--text3);line-height:1.7;margin-bottom:16px;">
+          Görsel başarıyla yüklendi. Renk sayısını indirgemek istiyorsanız önce Adım 2'ye geçin. Renk indirgemesine gerek duymuyorsanız direkt pikselleştirmeye geçebilirsiniz.
+        </p>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <button class="btn-next" onclick="goStep(1)">
+            Renk İndirgemesine Geç (Adım 2)
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="#fff" stroke-width="1.5" fill="none"/></svg>
+          </button>
+          <button class="btn-next" onclick="skipToPixelate()" style="background:var(--teal);">
+            Direkt Pikselleştirmeye Geç (Adım 3)
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="#fff" stroke-width="1.5" fill="none"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════ -->
+<!-- PANEL 1: RENK İNDİRGEME                   -->
+<!-- ══════════════════════════════════════════ -->
+<div class="panel" id="p1">
+  <div class="step-banner">
+    <span class="badge">Adım 2</span>
+    Yüklenen orijinal görsel üzerinde renk sayısını indirgeyin. Çıkan görsel bir sonraki adımda pikselleştirme kaynağı olarak kullanılacak.
+  </div>
+
+  <div class="two-col" style="margin-bottom:20px;">
+    <div class="card">
+      <div class="card-title">Renk İndirgeme Ayarları</div>
+      <div class="slider-row">
+        <label>Renk Sayısı</label>
+        <input type="range" id="k-slider" min="2" max="8" step="1" value="8" oninput="document.getElementById('k-val').textContent=this.value">
+        <span class="sv" id="k-val">8</span>
+      </div>
+      <p style="font-size:12px;color:var(--text3);margin-bottom:14px;line-height:1.6;">Makineler maksimum 8 renkte çalışabilir. Seçtiğiniz renk sayısı halının iş rengi sayısını belirler.</p>
+      <button class="btn btn-primary" onclick="reduceColors()" style="width:100%;">Renk İndirgemesini Uygula</button>
+    </div>
+    <div class="card">
+      <div class="card-title" style="display:flex;justify-content:space-between;align-items:center;">
+        <span>Renk Paleti</span>
+        <button class="btn btn-sm" onclick="copyAllColors()">Tümünü Kopyala</button>
+      </div>
+      <div id="color-list"><span style="color:var(--text3);font-size:13px;">Renk indirgemesi bekleniyor…</span></div>
+    </div>
+  </div>
+
+  <div class="two-col">
+    <div>
+      <div class="canvas-wrap" style="height:340px;">
+        <span class="canvas-label">Orijinal</span>
+        <canvas id="c-col-orig" style="max-height:340px;"></canvas>
+      </div>
+    </div>
+    <div>
+      <div class="canvas-wrap" style="height:340px;">
+        <span class="canvas-label">Renk İndirgenmiş</span>
+        <div class="canvas-ph" id="ph-col">Renk indirgemesi bekleniyor…</div>
+        <canvas id="c-col" style="display:none; max-height:340px;"></canvas>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
+        <button class="btn btn-sm btn-teal" id="dl-col" style="display:none;" onclick="dlCanvas('c-col','hali-renkli.png')">PNG İndir</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="color-next" style="display:none; margin-top:8px;">
+    <button class="btn-next" onclick="goStep(2)">
+      Pikselleştirmeye Geç
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="#fff" stroke-width="1.5" fill="none"/></svg>
+    </button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════ -->
+<!-- PANEL 2: PİKSELLEŞTİR & ÖLÇEK             -->
+<!-- ══════════════════════════════════════════ -->
+<div class="panel" id="p2">
+  <div class="step-banner">
+    <span class="badge">Adım 3</span>
+    Kaynak: <strong id="pix-source-label">renk indirgenmiş görsel</strong>. Boyutu elle girin veya tarak/atkı hesabından otomatik uygulayın.
+  </div>
+
+  <div class="two-col" style="margin-bottom:20px;">
+    <!-- Sol: Boyut girişi -->
+    <div style="display:flex;flex-direction:column;gap:16px;">
+      <div class="card">
+        <div class="card-title">Çıktı Piksel Boyutu</div>
+        <div class="form-row" style="align-items:flex-end;">
+          <div><label>Genişlik (piksel)</label><input type="number" id="px-w" value="400" min="10" max="5000" oninput="onWChange(this.value)"></div>
+          <div><label>Yükseklik (piksel)</label><input type="number" id="px-h" value="600" min="10" max="5000" oninput="onHChange(this.value)"></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;margin:0;font-size:12px;color:var(--text2);">
+            <div id="lock-box" onclick="toggleAspect()">
+              <svg id="lock-icon" width="10" height="11" viewBox="0 0 10 11" fill="none" style="display:none;">
+                <rect x="1.5" y="4.5" width="7" height="5.5" rx="1.5" stroke="#a07828" stroke-width="1.2"/>
+                <path d="M3 4.5V3a2 2 0 014 0v1.5" stroke="#a07828" stroke-width="1.2" fill="none"/>
+              </svg>
+              <svg id="unlock-icon" width="10" height="11" viewBox="0 0 10 11" fill="none">
+                <rect x="1.5" y="4.5" width="7" height="5.5" rx="1.5" stroke="#9a8e80" stroke-width="1.2"/>
+                <path d="M3 4.5V3a2 2 0 014 0" stroke="#9a8e80" stroke-width="1.2" fill="none" stroke-dasharray="2 1"/>
+              </svg>
+            </div>
+            En/Boy oranını koru
+            <span id="aspect-ratio-label" style="color:var(--text3);margin-left:2px;"></span>
+          </label>
+        </div>
+        <div style="padding:8px 12px;background:var(--surface2);border-radius:6px;border-left:3px solid var(--teal);margin-bottom:14px;">
+          <p style="font-size:12px;color:var(--text2);line-height:1.6;">Her piksel, renk indirgenmiş görseldeki en yakın pikselden <strong style="color:var(--gold2)">aynen kopyalanır</strong> — renk karışımı olmaz.</p>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn btn-primary" onclick="processPixelate()">Pikselleştir</button>
+          <button class="btn btn-sm btn-teal" id="btn-from-calc" style="display:none" onclick="applyCalcSize()">Hesaptan Uygula</button>
+        </div>
+      </div>
+
+      <!-- Tarak/Atkı Hesabı -->
+      <div class="card">
+        <div class="card-title">Tarak / Atkı Hesabı</div>
+        <div class="form-row">
+          <div><label>Halı Eni (cm)</label><input type="number" id="c-en" value="80" min="1"></div>
+          <div><label>Halı Boyu (cm)</label><input type="number" id="c-boy" value="150" min="1"></div>
+        </div>
+        <div class="form-row">
+          <div><label>Tarak (ilmek/cm)</label><input type="number" id="c-tarak" value="5" min="0.1" step="0.1" placeholder="Örn: 4, 5, 7"></div>
+          <div><label>Atkı / Sıklık (ilmek/cm)</label><input type="number" id="c-atki" value="12" min="0.1" step="0.1" placeholder="Örn: 10, 12, 15"></div>
+        </div>
+        <button class="btn btn-primary" onclick="calcPixels()" style="width:100%;margin-bottom:10px;">Hesapla</button>
+        <div style="font-size:11px;color:var(--text3);margin-bottom:6px;letter-spacing:0.5px;text-transform:uppercase;">Hazır Presetler</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;">
+          <button class="btn btn-sm" onclick="setPreset(4,10)">4 × 10</button>
+          <button class="btn btn-sm" onclick="setPreset(5,12)">5 × 12</button>
+          <button class="btn btn-sm" onclick="setPreset(7,14)">7 × 14</button>
+          <button class="btn btn-sm" onclick="setPreset(8,16)">8 × 16</button>
+          <button class="btn btn-sm" onclick="setPreset(10,20)">10 × 20</button>
+        </div>
+        <div id="calc-result" style="margin-top:12px;"><span style="color:var(--text3);font-size:13px;">Değerleri girin ve hesapla butonuna basın.</span></div>
+      </div>
+    </div>
+
+    <!-- Sağ: Önizleme -->
+    <div style="display:flex;flex-direction:column;gap:16px;">
+      <div>
+        <div class="canvas-wrap" style="height:280px;">
+          <span class="canvas-label">Renk İndirgenmiş (Kaynak)</span>
+          <div class="canvas-ph" id="ph-src-prev">Renk indirgeme bekleniyor</div>
+          <canvas id="c-src-prev" style="display:none; max-height:280px;"></canvas>
+        </div>
+      </div>
+      <div>
+        <div class="canvas-wrap" style="height:280px;">
+          <span class="canvas-label">Pikselleştirilmiş Çıktı</span>
+          <div class="canvas-ph" id="ph-proc">Pikselleştir butonuna basın</div>
+          <canvas id="c-proc" style="display:none; max-height:280px;"></canvas>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
+          <button class="btn btn-sm btn-teal" id="dl-png" style="display:none" onclick="dlCanvas('c-proc','hali-piksel.png')">PNG İndir</button>
+          <button class="btn btn-sm" id="dl-bmp" style="display:none" onclick="dlCanvas('c-proc','hali-piksel.bmp')">BMP İndir</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="size-stats" style="display:none; margin-bottom:16px;">
+    <div class="three-col">
+      <div class="stat-box"><div class="val" id="s-pw">—</div><div class="lbl">Çıktı Genişlik</div></div>
+      <div class="stat-box"><div class="val" id="s-ph">—</div><div class="lbl">Çıktı Yükseklik</div></div>
+      <div class="stat-box"><div class="val" id="s-tot">—</div><div class="lbl">Toplam Piksel</div></div>
+    </div>
+  </div>
+
+  <div id="pix-next" style="display:none;">
+    <button class="btn-next" onclick="goStep(3)">
+      Karşılaştır & Isı Haritasına Geç
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="#fff" stroke-width="1.5" fill="none"/></svg>
+    </button>
+  </div>
+
+  </div>
+</div>
+
+<!-- STEP NAV'A EKSİK PANEL İÇİN GIZLI 4. SEKME -->
+<!-- Panel 3: Karşılaştır & Isı Haritası - step nav'da görünmez, butonla erişilir -->
+<div class="panel" id="p3">
+
+  <!-- A: Karşılaştırma -->
+  <div style="margin-bottom:28px;">
+    <div style="font-size:13px;font-weight:500;color:var(--gold2);margin-bottom:14px;display:flex;align-items:center;gap:8px;">
+      <span style="background:var(--gold);color:#fff;border-radius:50%;width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">A</span>
+      Yan Yana Karşılaştırma
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap;">
+      <button class="btn btn-sm" onclick="zoomBoth(1.3)">+ Yakınlaş</button>
+      <button class="btn btn-sm" onclick="zoomBoth(1/1.3)">− Uzaklaş</button>
+      <button class="btn btn-sm" onclick="resetZoom()">Sıfırla</button>
+      <div style="width:1px;height:18px;background:var(--border2);margin:0 2px;"></div>
+      <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2);cursor:pointer;margin:0;">
+        <div id="sync-box" onclick="toggleSync()" style="width:16px;height:16px;border:1.5px solid var(--gold);border-radius:3px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .15s;flex-shrink:0;background:rgba(160,120,40,0.12);">
+          <svg width="9" height="8" viewBox="0 0 9 8" fill="none"><path d="M1 4h7M5 1l3 3-3 3" stroke="#a07828" stroke-width="1.2" fill="none"/></svg>
+        </div>
+        Zoom senkronize
+      </label>
+      <span id="zoom-label" style="font-size:11px;color:var(--text3);">%100</span>
+      <span style="font-size:11px;color:var(--text3);">Sürükle: kaydır · Tekerlek: zoom</span>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+          <span style="font-size:11px;font-weight:500;letter-spacing:0.8px;text-transform:uppercase;color:var(--text3);">Orijinal</span>
+          <span id="info-orig" style="font-size:11px;color:var(--text3);"></span>
+        </div>
+        <div id="vp-orig" style="width:100%;height:460px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;overflow:hidden;position:relative;cursor:grab;">
+          <canvas id="cv-orig" style="position:absolute;top:0;left:0;image-rendering:auto;transform-origin:0 0;"></canvas>
+          <div class="canvas-ph" id="ph-vp-orig" style="height:100%;">Görsel yüklenmedi</div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+          <span style="font-size:11px;font-weight:500;letter-spacing:0.8px;text-transform:uppercase;color:var(--text3);">Pikselleştirilmiş</span>
+          <span id="info-proc" style="font-size:11px;color:var(--text3);"></span>
+        </div>
+        <div id="vp-proc" style="width:100%;height:460px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;overflow:hidden;position:relative;cursor:grab;">
+          <canvas id="cv-proc" style="position:absolute;top:0;left:0;image-rendering:pixelated;transform-origin:0 0;"></canvas>
+          <div class="canvas-ph" id="ph-vp-proc" style="height:100%;">Pikselleştirme bekleniyor</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="border-top:1px solid var(--border2);margin-bottom:24px;"></div>
+
+  <!-- B: Isı haritası -->
+  <div>
+    <div style="font-size:13px;font-weight:500;color:var(--gold2);margin-bottom:14px;display:flex;align-items:center;gap:8px;">
+      <span style="background:var(--gold);color:#fff;border-radius:50%;width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">B</span>
+      Kabartma Isı Haritası
+    </div>
+    <div class="card" style="max-width:440px;margin-bottom:16px;">
+      <div class="card-title">Ayarlar</div>
+      <div class="slider-row">
+        <label>Bulanıklık Yarıçapı</label>
+        <input type="range" id="h-blur" min="1" max="20" step="1" value="6" oninput="document.getElementById('h-blur-v').textContent=this.value+'px'">
+        <span class="sv" id="h-blur-v">6px</span>
+      </div>
+      <button class="btn btn-primary" onclick="generateHeatmap()">Haritayı Oluştur</button>
+    </div>
+    <div style="max-width:640px;">
+      <div class="canvas-wrap" style="height:480px;">
+        <span class="canvas-label">Isı Haritası</span>
+        <div class="canvas-ph" id="ph-heat">Pikselleştirme yapıldıktan sonra oluşturabilirsiniz</div>
+        <canvas id="c-heat" style="display:none; max-width:100%; max-height:480px; width:auto; height:auto;"></canvas>
+      </div>
+    </div>
+    <div id="heat-legend" style="display:none; margin-top:14px; max-width:640px;">
+      <span>Düşük kabartma</span>
+      <div id="heat-grad"></div>
+      <span>Yüksek kabartma</span>
+    </div>
+    <p id="heat-note" style="display:none; font-size:12px;color:var(--text3);margin-top:10px;line-height:1.7; max-width:640px;">
+      Piksellerin parlaklık ve doygunluk yoğunluğuna göre halıdaki kabartma bölgelerini tahmin eder. Koyu/doygun renkler yüksek, açık renkler düşük kabartmayı temsil eder.
+    </p>
+  </div>
+</div>
+
+<div id="toast">Kopyalandı!</div>
+
+<script>
+// ── STATE ─────────────────────────────────────────────────────
+let origImg    = null;   // yüklenen ham görsel
+let colorData  = null;   // renk indirgenmiş ImageData
+let procData   = null;   // pikselleştirilmiş ImageData
+let calcRes    = null;
+let aspectLocked = false;
+let aspectRatio  = 1;
+
+// ── STEP NAV ──────────────────────────────────────────────────
+const STEPS = 4;
+function goStep(i) {
+  document.querySelectorAll('.panel').forEach((p,j) => p.classList.toggle('active', j===i));
+  document.querySelectorAll('.step').forEach((s,j) => s.classList.toggle('active', j===i));
+}
+function markDone(i) {
+  const s = document.getElementById('step-'+i);
+  if(s) s.classList.add('done');
+  if(i+1 < STEPS) {
+    const nxt = document.getElementById('step-'+(i+1));
+    if(nxt) nxt.classList.add('done');
+  }
+}
+function skipToPixelate() {
+  colorData = null;
+  markDone(0);
+  document.getElementById('step-1').classList.remove('done');
+  document.getElementById('step-2').classList.add('done');
+  const lbl = document.getElementById('pix-source-label');
+  if(lbl) lbl.textContent = 'orijinal görsel (renk indirgeme atlandı)';
+  if(origImg) {
+    const cp = document.getElementById('c-src-prev');
+    cp.width = origImg.width; cp.height = origImg.height;
+    cp.getContext('2d').drawImage(origImg, 0, 0);
+    show('c-src-prev'); hide('ph-src-prev');
+  }
+  goStep(2);
+}
+
+// ── FILE LOAD ─────────────────────────────────────────────────
+document.getElementById('file-input').addEventListener('change', e => {
+  if(e.target.files[0]) loadFile(e.target.files[0]);
+});
+(function(){
+  const uz = document.getElementById('upload-zone');
+  uz.addEventListener('click', () => document.getElementById('file-input').click());
+  uz.addEventListener('dragover', e => { e.preventDefault(); uz.classList.add('drag'); });
+  uz.addEventListener('dragleave', () => uz.classList.remove('drag'));
+  uz.addEventListener('drop', e => {
+    e.preventDefault(); uz.classList.remove('drag');
+    if(e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]);
+  });
+})();
+
+function loadFile(file) {
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const img = new Image();
+    img.onload = () => {
+      origImg = img;
+      colorData = null; procData = null;
+
+      // reset downstream step indicators
+      [1,2,3].forEach(i => document.getElementById('step-'+i).classList.remove('done'));
+
+      // draw preview
+      const c = document.getElementById('c-orig');
+      c.width = img.width; c.height = img.height;
+      c.getContext('2d').drawImage(img, 0, 0);
+
+      document.getElementById('s-ow').textContent  = img.width + 'px';
+      document.getElementById('s-oh').textContent  = img.height + 'px';
+      document.getElementById('s-rat').textContent = (img.width/img.height).toFixed(2);
+
+      document.getElementById('px-w').value = img.width;
+      document.getElementById('px-h').value = img.height;
+      aspectRatio = img.width / img.height;
+
+      document.getElementById('upload-zone').style.display   = 'none';
+      document.getElementById('upload-result').style.display = 'block';
+
+      // also mirror orig to step-1 preview
+      const co = document.getElementById('c-col-orig');
+      co.width = img.width; co.height = img.height;
+      co.getContext('2d').drawImage(img, 0, 0);
+
+      // compare viewer orig
+      const cv = document.getElementById('cv-orig');
+      cv.width = img.width; cv.height = img.height;
+      cv.getContext('2d').drawImage(img, 0, 0);
+      document.getElementById('info-orig').textContent = img.width + '×' + img.height + 'px';
+      hide('ph-vp-orig');
+      fitCanvas('orig');
+
+      markDone(0);
+    };
+    img.src = ev.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+// ── HELPERS ───────────────────────────────────────────────────
+function show(id){ const e=document.getElementById(id); if(e) e.style.display='block'; }
+function hide(id){ const e=document.getElementById(id); if(e) e.style.display='none'; }
+function showToast(msg){
+  const t=document.getElementById('toast'); t.textContent=msg;
+  t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2200);
+}
+function dlCanvas(id, name) {
+  const c = document.getElementById(id);
+  if(!c) return;
+  const a = document.createElement('a');
+  a.download = name; a.href = c.toDataURL('image/png'); a.click();
+}
+
+// ── ASPECT RATIO ──────────────────────────────────────────────
+function toggleAspect() {
+  aspectLocked = !aspectLocked;
+  const box = document.getElementById('lock-box');
+  const li  = document.getElementById('lock-icon');
+  const ui  = document.getElementById('unlock-icon');
+  if(aspectLocked) {
+    const w = parseInt(document.getElementById('px-w').value)||1;
+    const h = parseInt(document.getElementById('px-h').value)||1;
+    aspectRatio = w/h;
+    box.style.borderColor = 'var(--gold)';
+    box.style.background  = 'rgba(160,120,40,0.12)';
+    li.style.display='block'; ui.style.display='none';
+    updateAspectLabel();
+  } else {
+    box.style.borderColor='var(--border2)'; box.style.background='transparent';
+    li.style.display='none'; ui.style.display='block';
+    document.getElementById('aspect-ratio-label').textContent='';
+  }
+}
+function updateAspectLabel() {
+  const w=parseInt(document.getElementById('px-w').value)||1;
+  const h=parseInt(document.getElementById('px-h').value)||1;
+  const g=gcd(w,h);
+  document.getElementById('aspect-ratio-label').textContent='('+Math.round(w/g)+':'+Math.round(h/g)+')';
+}
+function gcd(a,b){ return b===0?a:gcd(b,a%b); }
+function onWChange(val){ if(!aspectLocked) return; document.getElementById('px-h').value=Math.round(parseInt(val)/aspectRatio); }
+function onHChange(val){ if(!aspectLocked) return; document.getElementById('px-w').value=Math.round(parseInt(val)*aspectRatio); }
+
+// ── COLOR REDUCTION ───────────────────────────────────────────
+function getOrigData() {
+  if(!origImg) return null;
+  const tmp = document.createElement('canvas');
+  tmp.width = origImg.width; tmp.height = origImg.height;
+  tmp.getContext('2d').drawImage(origImg, 0, 0);
+  return tmp.getContext('2d').getImageData(0, 0, tmp.width, tmp.height);
+}
+
+function reduceColors() {
+  if(!origImg){ alert('Önce görsel yükleyin.'); return; }
+  const src = getOrigData();
+  const k = parseInt(document.getElementById('k-slider').value);
+  const d = src.data;
+
+  const pixels = [];
+  for(let i=0;i<d.length;i+=4) pixels.push([d[i],d[i+1],d[i+2]]);
+  const step = Math.max(1, Math.floor(pixels.length/6000));
+  const sample = pixels.filter((_,i)=>i%step===0);
+  const palette = kMeans(sample, k, 25);
+  const out = mapToPalette(d, palette);
+
+  const c = document.getElementById('c-col');
+  c.width = src.width; c.height = src.height;
+  const ctx = c.getContext('2d');
+  const id = ctx.createImageData(src.width, src.height);
+  id.data.set(out); ctx.putImageData(id, 0, 0);
+  colorData = id;
+
+  show('c-col'); hide('ph-col');
+  show('dl-col'); show('color-next');
+
+  // mirror to step-2 source preview
+  const cp = document.getElementById('c-src-prev');
+  cp.width = src.width; cp.height = src.height;
+  cp.getContext('2d').putImageData(id, 0, 0);
+  show('c-src-prev'); hide('ph-src-prev');
+
+  // color list
+  const counts={};
+  for(let i=0;i<out.length;i+=4){
+    const h=rgbHex(out[i],out[i+1],out[i+2]);
+    counts[h]=(counts[h]||0)+1;
+  }
+  const total = Object.values(counts).reduce((a,b)=>a+b,0);
+  const sorted = Object.entries(counts).sort((a,b)=>b[1]-a[1]);
+  const list = document.getElementById('color-list');
+  list.innerHTML='';
+  sorted.forEach(([hex,cnt])=>{
+    const pct=((cnt/total)*100).toFixed(1);
+    const el=document.createElement('div');
+    el.className='color-item'; el.title='Kopyala: '+hex;
+    el.innerHTML=`<div class="color-dot" style="background:${hex}"></div><span class="color-hex">${hex}</span><span class="color-pct">${pct}%</span><span class="copy-tag">kopyala</span>`;
+    el.onclick=()=>{ navigator.clipboard.writeText(hex); showToast('Kopyalandı: '+hex); };
+    list.appendChild(el);
+  });
+
+  markDone(1);
+  // banner güncelle
+  const lbl = document.getElementById('pix-source-label');
+  if(lbl) lbl.textContent = 'renk indirgenmiş görsel';
+}
+
+function copyAllColors() {
+  const hexes=[...document.querySelectorAll('#color-list .color-hex')].map(e=>e.textContent);
+  if(!hexes.length) return;
+  navigator.clipboard.writeText(hexes.join('\n'));
+  showToast('Tüm '+hexes.length+' renk kopyalandı!');
+}
+
+function kMeans(pixels, k, iters) {
+  let centers=[], used=new Set();
+  while(centers.length<k){
+    const i=Math.floor(Math.random()*pixels.length);
+    if(!used.has(i)){ used.add(i); centers.push([...pixels[i]]); }
+  }
+  for(let it=0;it<iters;it++){
+    const clusters=Array.from({length:k},()=>[]);
+    pixels.forEach(p=>{
+      let best=0,bd=Infinity;
+      centers.forEach((c,i)=>{ const d=(p[0]-c[0])**2+(p[1]-c[1])**2+(p[2]-c[2])**2; if(d<bd){bd=d;best=i;} });
+      clusters[best].push(p);
+    });
+    const nc=clusters.map((cl,i)=>{
+      if(!cl.length) return centers[i];
+      return [Math.round(cl.reduce((s,p)=>s+p[0],0)/cl.length),Math.round(cl.reduce((s,p)=>s+p[1],0)/cl.length),Math.round(cl.reduce((s,p)=>s+p[2],0)/cl.length)];
+    });
+    let changed=false;
+    nc.forEach((c,i)=>{ if(c[0]!==centers[i][0]||c[1]!==centers[i][1]||c[2]!==centers[i][2]) changed=true; });
+    centers=nc; if(!changed) break;
+  }
+  return centers;
+}
+
+function mapToPalette(data, palette) {
+  const out=new Uint8ClampedArray(data.length);
+  for(let i=0;i<data.length;i+=4){
+    let best=0,bd=Infinity;
+    palette.forEach((c,ci)=>{ const d=(data[i]-c[0])**2+(data[i+1]-c[1])**2+(data[i+2]-c[2])**2; if(d<bd){bd=d;best=ci;} });
+    out[i]=palette[best][0];out[i+1]=palette[best][1];out[i+2]=palette[best][2];out[i+3]=data[i+3];
+  }
+  return out;
+}
+
+function rgbHex(r,g,b){ return '#'+[r,g,b].map(v=>v.toString(16).padStart(2,'0')).join(''); }
+
+// ── PIXELATE (renk indirgenmiş kaynak üzerinden) ──────────────
+function getSourceData() {
+  if(colorData) return colorData;
+  // renk indirgeme atlandıysa orijinal görseli kullan
+  if(origImg) return getOrigData();
+  alert('Önce görsel yükleyin.');
+  return null;
+}
+
+function processPixelate() {
+  const src = getSourceData();
+  if(!src) return;
+  const W = parseInt(document.getElementById('px-w').value);
+  const H = parseInt(document.getElementById('px-h').value);
+  const sW = src.width, sH = src.height;
+  const sData = src.data;
+
+  const out = new Uint8ClampedArray(W * H * 4);
+  for(let y=0;y<H;y++){
+    const srcY = Math.floor(y * sH / H);
+    for(let x=0;x<W;x++){
+      const srcX = Math.floor(x * sW / W);
+      const si=(srcY*sW+srcX)*4, di=(y*W+x)*4;
+      out[di]=sData[si]; out[di+1]=sData[si+1]; out[di+2]=sData[si+2]; out[di+3]=sData[si+3];
+    }
+  }
+
+  const c = document.getElementById('c-proc');
+  c.width=W; c.height=H;
+  const ctx=c.getContext('2d');
+  const id=ctx.createImageData(W,H);
+  id.data.set(out); ctx.putImageData(id,0,0);
+  procData=id;
+
+  show('c-proc'); hide('ph-proc');
+  show('dl-png'); show('dl-bmp'); show('size-stats'); show('pix-next');
+  document.getElementById('s-pw').textContent=W+'px';
+  document.getElementById('s-ph').textContent=H+'px';
+  document.getElementById('s-tot').textContent=(W*H).toLocaleString('tr-TR');
+
+  // compare viewer
+  const cp=document.getElementById('cv-proc');
+  cp.width=W; cp.height=H;
+  cp.getContext('2d').putImageData(id,0,0);
+  document.getElementById('info-proc').textContent=W+'×'+H+'px';
+  hide('ph-vp-proc');
+  fitCanvas('proc');
+
+  markDone(2);
+}
+
+// ── TARAK / ATKI ──────────────────────────────────────────────
+function setPreset(t,a){ document.getElementById('c-tarak').value=t; document.getElementById('c-atki').value=a; }
+
+function calcPixels() {
+  const en  = parseFloat(document.getElementById('c-en').value);
+  const boy = parseFloat(document.getElementById('c-boy').value);
+  const tar = parseFloat(document.getElementById('c-tarak').value);
+  const atk = parseFloat(document.getElementById('c-atki').value);
+  if(!en||!boy||!tar||!atk) return;
+  const pW=Math.round(en*tar), pH=Math.round(boy*atk);
+  calcRes={w:pW,h:pH};
+  const cT=(1/tar).toFixed(3), cA=(1/atk).toFixed(3);
+  document.getElementById('calc-result').innerHTML=`
+    <div class="formula">
+      <strong>En Pikseli:</strong> ${en} cm × ${tar} ilmek/cm = <strong>${pW} piksel</strong><br>
+      <strong>Boy Pikseli:</strong> ${boy} cm × ${atk} ilmek/cm = <strong>${pH} piksel</strong>
+    </div>
+    <div class="two-col" style="margin-bottom:10px;">
+      <div class="stat-box"><div class="val">${cT} cm</div><div class="lbl">1 tarak ilmeği</div></div>
+      <div class="stat-box"><div class="val">${cA} cm</div><div class="lbl">1 atkı ilmeği</div></div>
+    </div>
+    <button class="btn btn-teal btn-sm" onclick="applyCalcSize()">Bu boyutları uygula ve pikselleştir</button>
+  `;
+  show('btn-from-calc');
+}
+
+function applyCalcSize() {
+  if(!calcRes) return;
+  document.getElementById('px-w').value=calcRes.w;
+  document.getElementById('px-h').value=calcRes.h;
+  processPixelate();
+}
+
+// ── ZOOM + PAN VIEWER ────────────────────────────────────────
+const vpState = { orig:{scale:1,ox:0,oy:0}, proc:{scale:1,ox:0,oy:0} };
+let syncEnabled = true;
+
+function fitCanvas(side) {
+  const vp=document.getElementById('vp-'+side);
+  const cv=document.getElementById('cv-'+side);
+  if(!cv.width) return;
+  const vw=vp.clientWidth, vh=vp.clientHeight;
+  const scale=Math.min(vw/cv.width, vh/cv.height)*0.95;
+  vpState[side]={ scale, ox:(vw-cv.width*scale)/2, oy:(vh-cv.height*scale)/2 };
+  applyTransform(side); updateZoomLabel();
+}
+
+function applyTransform(side) {
+  const cv=document.getElementById('cv-'+side);
+  const s=vpState[side];
+  cv.style.transform=`translate(${s.ox}px,${s.oy}px) scale(${s.scale})`;
+}
+
+function updateZoomLabel() {
+  document.getElementById('zoom-label').textContent=Math.round(vpState['orig'].scale*100)+'%';
+}
+
+function zoomBoth(factor) {
+  ['orig','proc'].forEach(side=>{
+    const vp=document.getElementById('vp-'+side);
+    const cv=document.getElementById('cv-'+side);
+    if(!cv.width) return;
+    const s=vpState[side], ns=Math.max(0.1,Math.min(40,s.scale*factor));
+    const vw=vp.clientWidth,vh=vp.clientHeight;
+    s.ox=(vw/2)-(vw/2-s.ox)*(ns/s.scale);
+    s.oy=(vh/2)-(vh/2-s.oy)*(ns/s.scale);
+    s.scale=ns; applyTransform(side);
+  });
+  updateZoomLabel();
+}
+
+function resetZoom(){ fitCanvas('orig'); fitCanvas('proc'); }
+
+function toggleSync() {
+  syncEnabled=!syncEnabled;
+  const box=document.getElementById('sync-box');
+  box.style.borderColor=syncEnabled?'var(--gold)':'var(--border2)';
+  box.style.background=syncEnabled?'rgba(160,120,40,0.12)':'transparent';
+}
+
+function setupViewport(side) {
+  const vp=document.getElementById('vp-'+side);
+  const other=side==='orig'?'proc':'orig';
+  let dragging=false,lastX=0,lastY=0;
+
+  vp.addEventListener('wheel',e=>{
+    e.preventDefault();
+    const cv=document.getElementById('cv-'+side); if(!cv.width) return;
+    const rect=vp.getBoundingClientRect();
+    const mx=e.clientX-rect.left, my=e.clientY-rect.top;
+    const factor=e.deltaY<0?1.15:1/1.15;
+    const s=vpState[side], ns=Math.max(0.1,Math.min(40,s.scale*factor));
+    s.ox=mx-(mx-s.ox)*(ns/s.scale); s.oy=my-(my-s.oy)*(ns/s.scale); s.scale=ns;
+    applyTransform(side);
+    if(syncEnabled){
+      const so=vpState[other], cvO=document.getElementById('cv-'+other);
+      if(cvO.width){ const ovp=document.getElementById('vp-'+other), or2=ovp.getBoundingClientRect();
+        const rx=mx/rect.width*or2.width, ry=my/rect.height*or2.height;
+        so.ox=rx-(rx-so.ox)*(ns/so.scale); so.oy=ry-(ry-so.oy)*(ns/so.scale); so.scale=ns;
+        applyTransform(other); }
+    }
+    updateZoomLabel();
+  },{passive:false});
+
+  vp.addEventListener('mousedown',e=>{ dragging=true; lastX=e.clientX; lastY=e.clientY; vp.style.cursor='grabbing'; });
+  document.addEventListener('mousemove',e=>{
+    if(!dragging) return;
+    const dx=e.clientX-lastX, dy=e.clientY-lastY; lastX=e.clientX; lastY=e.clientY;
+    vpState[side].ox+=dx; vpState[side].oy+=dy; applyTransform(side);
+    if(syncEnabled){ vpState[other].ox+=dx; vpState[other].oy+=dy; applyTransform(other); }
+  });
+  document.addEventListener('mouseup',()=>{ if(dragging){ dragging=false; vp.style.cursor='grab'; } });
+
+  let ltx=0,lty=0,lpd=0;
+  vp.addEventListener('touchstart',e=>{
+    if(e.touches.length===1){ ltx=e.touches[0].clientX; lty=e.touches[0].clientY; }
+    else if(e.touches.length===2) lpd=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
+  },{passive:true});
+  vp.addEventListener('touchmove',e=>{
+    e.preventDefault();
+    if(e.touches.length===1){
+      const dx=e.touches[0].clientX-ltx,dy=e.touches[0].clientY-lty; ltx=e.touches[0].clientX; lty=e.touches[0].clientY;
+      vpState[side].ox+=dx; vpState[side].oy+=dy; applyTransform(side);
+      if(syncEnabled){ vpState[other].ox+=dx; vpState[other].oy+=dy; applyTransform(other); }
+    } else if(e.touches.length===2){
+      const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
+      const f=d/lpd; lpd=d;
+      const s=vpState[side]; s.scale=Math.max(0.1,Math.min(40,s.scale*f)); applyTransform(side);
+      if(syncEnabled){ vpState[other].scale=s.scale; applyTransform(other); }
+      updateZoomLabel();
+    }
+  },{passive:false});
+}
+
+setupViewport('orig');
+setupViewport('proc');
+
+// ── HEATMAP ───────────────────────────────────────────────────
+function generateHeatmap() {
+  const src = procData || colorData || getOrigData();
+  if(!src){ alert('Önce pikselleştirme yapın.'); return; }
+  const blur=parseInt(document.getElementById('h-blur').value);
+  const w=src.width,h=src.height,d=src.data;
+  const intensity=new Float32Array(w*h);
+  for(let i=0;i<d.length;i+=4){
+    const r=d[i],g=d[i+1],b=d[i+2];
+    const lum=(0.299*r+0.587*g+0.114*b)/255;
+    const mx=Math.max(r,g,b),mn=Math.min(r,g,b);
+    const sat=mx===0?0:(mx-mn)/mx;
+    intensity[i/4]=(1-lum)*0.55+sat*0.45;
+  }
+  const blurred=boxBlur(intensity,w,h,blur);
+  let lo=Infinity,hi=-Infinity;
+  blurred.forEach(v=>{if(v<lo)lo=v;if(v>hi)hi=v;});
+  const rng=hi-lo||1;
+  const hc=document.getElementById('c-heat');
+  hc.width=w; hc.height=h;
+  const hctx=hc.getContext('2d');
+  const hid=hctx.createImageData(w,h);
+  for(let i=0;i<blurred.length;i++){
+    const t=(blurred[i]-lo)/rng;
+    const [r,g,b]=heatColor(t);
+    hid.data[i*4]=r;hid.data[i*4+1]=g;hid.data[i*4+2]=b;hid.data[i*4+3]=255;
+  }
+  hctx.putImageData(hid,0,0);
+  show('c-heat'); hide('ph-heat');
+  show('heat-legend'); show('heat-note');
+}
+
+function heatColor(t){
+  const stops=[[4,44,83],[29,158,117],[239,159,39],[226,75,74],[255,255,255]];
+  const n=stops.length-1;
+  const i=Math.min(Math.floor(t*n),n-1), f=t*n-i;
+  const a=stops[i],b=stops[i+1];
+  return [Math.round(a[0]+(b[0]-a[0])*f),Math.round(a[1]+(b[1]-a[1])*f),Math.round(a[2]+(b[2]-a[2])*f)];
+}
+
+function boxBlur(data,w,h,r){
+  const s=[...data], d=new Float32Array(w*h);
+  for(let y=0;y<h;y++) for(let x=0;x<w;x++){
+    let sum=0,cnt=0;
+    for(let dy=-r;dy<=r;dy++) for(let dx2=-r;dx2<=r;dx2++){
+      const nx=x+dx2,ny=y+dy;
+      if(nx>=0&&nx<w&&ny>=0&&ny<h){sum+=s[ny*w+nx];cnt++;}
+    }
+    d[y*w+x]=sum/cnt;
+  }
+  return d;
+}
+</script>
+</body>
+</html>
