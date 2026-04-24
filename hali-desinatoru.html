@@ -343,6 +343,7 @@ select {
       </div>
       <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
         <button class="btn btn-sm btn-teal" id="dl-col" style="display:none;" onclick="dlCanvas('c-col','hali-renkli.png')">PNG İndir</button>
+        <button class="btn btn-sm" id="dl-col-bmp" style="display:none;" onclick="dlCanvas('c-col','hali-renkli.bmp')">BMP İndir</button>
       </div>
     </div>
   </div>
@@ -686,7 +687,73 @@ function dlCanvas(id, name) {
   const c = document.getElementById(id);
   if(!c) return;
   const a = document.createElement('a');
-  a.download = name; a.href = c.toDataURL('image/png'); a.click();
+  a.download = name;
+  if(name.toLowerCase().endsWith('.bmp')) {
+    // Gerçek BMP encoder — canvas.toDataURL('image/bmp') tüm tarayıcılarda yok
+    const blob = canvasToBMP(c);
+    const url = URL.createObjectURL(blob);
+    a.href = url;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  } else {
+    a.href = c.toDataURL('image/png');
+    a.click();
+  }
+}
+
+// ── 24-bit BMP Encoder ─────────────────────────────────────────
+// Tarayıcıların canvas.toDataURL('image/bmp') desteği tutarsız.
+// Bu fonksiyon bir canvas'ı sıkıştırmasız 24-bit BMP blob'una çevirir.
+// Üretilen dosya Windows, Photoshop, NedGraphics, Booria gibi
+// halı endüstrisi programlarında native açılır.
+function canvasToBMP(canvas) {
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width, h = canvas.height;
+  const imgData = ctx.getImageData(0, 0, w, h).data;
+
+  // BMP satırları 4-byte hizalı olmalı
+  const rowSize = Math.floor((24 * w + 31) / 32) * 4;
+  const imgSize = rowSize * h;
+  const fileSize = 54 + imgSize;
+
+  const buf = new ArrayBuffer(fileSize);
+  const dv = new DataView(buf);
+  const u8 = new Uint8Array(buf);
+
+  // BITMAPFILEHEADER (14 bayt)
+  u8[0] = 0x42; u8[1] = 0x4D;               // 'BM'
+  dv.setUint32(2, fileSize, true);
+  dv.setUint32(6, 0, true);                  // reserved
+  dv.setUint32(10, 54, true);                // pixel data offset
+
+  // BITMAPINFOHEADER (40 bayt)
+  dv.setUint32(14, 40, true);                // header boyutu
+  dv.setInt32(18, w, true);
+  dv.setInt32(22, -h, true);                 // negatif yükseklik = top-down
+  dv.setUint16(26, 1, true);                 // planes
+  dv.setUint16(28, 24, true);                // bits per pixel
+  dv.setUint32(30, 0, true);                 // BI_RGB (sıkıştırmasız)
+  dv.setUint32(34, imgSize, true);
+  dv.setUint32(38, 2835, true);              // X DPI (72)
+  dv.setUint32(42, 2835, true);              // Y DPI (72)
+  dv.setUint32(46, 0, true);                 // palette rengi sayısı
+  dv.setUint32(50, 0, true);                 // important colors
+
+  // Pixel data — BGR sırası, top-down (negative height), row padding
+  let offset = 54;
+  for(let y = 0; y < h; y++) {
+    const rowStart = offset;
+    for(let x = 0; x < w; x++) {
+      const i = (y * w + x) * 4;
+      u8[offset++] = imgData[i + 2]; // B
+      u8[offset++] = imgData[i + 1]; // G
+      u8[offset++] = imgData[i];     // R
+    }
+    // Satır padding (4'ün katına tamamla)
+    while((offset - rowStart) % 4 !== 0) u8[offset++] = 0;
+  }
+
+  return new Blob([buf], { type: 'image/bmp' });
 }
 
 // ── ASPECT RATIO ──────────────────────────────────────────────
@@ -749,7 +816,7 @@ function reduceColors() {
   colorData = id;
 
   show('c-col'); hide('ph-col');
-  show('dl-col'); show('color-next');
+  show('dl-col'); show('dl-col-bmp'); show('color-next');
 
   // mirror to step-2 source preview
   const cp = document.getElementById('c-src-prev');
@@ -808,7 +875,7 @@ function keepOriginalColors() {
   colorData = id;
 
   show('c-col'); hide('ph-col');
-  show('dl-col'); show('color-next');
+  show('dl-col'); show('dl-col-bmp'); show('color-next');
 
   // Adım 3 kaynak önizlemesini de güncelle
   const cp = document.getElementById('c-src-prev');
