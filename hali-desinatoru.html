@@ -266,10 +266,14 @@ select {
       </div>
       <div class="card">
         <div class="card-title">Görsel Bilgisi</div>
-        <div class="three-col" style="margin-bottom:12px;">
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px;">
           <div class="stat-box"><div class="val" id="s-ow">—</div><div class="lbl">Genişlik (px)</div></div>
           <div class="stat-box"><div class="val" id="s-oh">—</div><div class="lbl">Yükseklik (px)</div></div>
           <div class="stat-box"><div class="val" id="s-rat">—</div><div class="lbl">En/Boy</div></div>
+          <div class="stat-box"><div class="val" id="s-colors">—</div><div class="lbl">Toplam Renk</div></div>
+        </div>
+        <div id="color-warning" style="display:none;background:#fff4e0;border:1px solid #e8b75a;border-radius:8px;padding:10px 12px;margin-bottom:12px;font-size:12px;color:#7a5520;line-height:1.6;">
+          <strong>⚠ Uyarı:</strong> <span id="color-warning-text"></span>
         </div>
         <p style="font-size:12px;color:var(--text3);line-height:1.7;margin-bottom:16px;">
           Görsel başarıyla yüklendi. Renk sayısını indirgemek istiyorsanız önce Adım 2'ye geçin. Renk indirgemesine gerek duymuyorsanız direkt pikselleştirmeye geçebilirsiniz.
@@ -308,6 +312,12 @@ select {
       </div>
       <p style="font-size:12px;color:var(--text3);margin-bottom:14px;line-height:1.6;">Makineler maksimum 8 renkte çalışabilir. Seçtiğiniz renk sayısı halının iş rengi sayısını belirler.</p>
       <button class="btn btn-primary" onclick="reduceColors()" style="width:100%;">Renk İndirgemesini Uygula</button>
+      <button class="btn" onclick="keepOriginalColors()" style="width:100%;margin-top:8px;background:var(--bg2);color:var(--text1);border:1px solid var(--line);">
+        Renk Paletini Olduğu Gibi Kullan
+      </button>
+      <p style="font-size:11px;color:var(--text3);margin-top:8px;line-height:1.5;">
+        İndirgeme sonucunu beğenmediyseniz bu butonu kullanın — orijinal görseldeki tüm renkler korunur, sonraki adıma aynen aktarılır.
+      </p>
     </div>
     <div class="card">
       <div class="card-title" style="display:flex;justify-content:space-between;align-items:center;">
@@ -612,6 +622,32 @@ function loadFile(file) {
       document.getElementById('s-oh').textContent  = img.height + 'px';
       document.getElementById('s-rat').textContent = (img.width/img.height).toFixed(2);
 
+      // ── Benzersiz RGB renk sayımı ──────────────────────────────
+      // Her pikselin (R,G,B) değerini 24-bit integer anahtara çevir,
+      // Set ile tekilleştir. Alpha dahil edilmez.
+      try {
+        const imgData = c.getContext('2d').getImageData(0, 0, img.width, img.height).data;
+        const uniq = new Set();
+        for(let i = 0; i < imgData.length; i += 4) {
+          uniq.add((imgData[i] << 16) | (imgData[i+1] << 8) | imgData[i+2]);
+        }
+        const colorCount = uniq.size;
+        document.getElementById('s-colors').textContent = colorCount.toLocaleString('tr-TR');
+
+        // Uyarı: 8 veya daha az renk varsa indirgemeye gerek yok
+        const warnBox = document.getElementById('color-warning');
+        const warnTxt = document.getElementById('color-warning-text');
+        if(colorCount <= 8) {
+          warnTxt.textContent = 'Görsel zaten ' + colorCount + ' renkte, indirgeme gereksiz olabilir. Doğrudan pikselleştirmeye geçebilirsiniz.';
+          warnBox.style.display = 'block';
+        } else {
+          warnBox.style.display = 'none';
+        }
+      } catch(err) {
+        document.getElementById('s-colors').textContent = '—';
+        console.warn('Renk sayımı başarısız:', err);
+      }
+
       document.getElementById('px-w').value = img.width;
       document.getElementById('px-h').value = img.height;
       aspectRatio = img.width / img.height;
@@ -751,6 +787,70 @@ function copyAllColors() {
   if(!hexes.length) return;
   navigator.clipboard.writeText(hexes.join('\n'));
   showToast('Tüm '+hexes.length+' renk kopyalandı!');
+}
+
+// ── Renk indirgemesini atla: orijinal renkleri olduğu gibi kullan ──
+// reduceColors ile aynı akışı izler ama k-means çalıştırmaz —
+// orijinal görsel colorData'ya olduğu gibi yazılır, renk listesi
+// gerçek piksel dağılımından üretilir.
+function keepOriginalColors() {
+  if(!origImg){ alert('Önce görsel yükleyin.'); return; }
+  const src = getOrigData();
+  const d = src.data;
+
+  // Orijinal piksel verisini colorData'ya olduğu gibi yaz
+  const c = document.getElementById('c-col');
+  c.width = src.width; c.height = src.height;
+  const ctx = c.getContext('2d');
+  const id = ctx.createImageData(src.width, src.height);
+  id.data.set(d);
+  ctx.putImageData(id, 0, 0);
+  colorData = id;
+
+  show('c-col'); hide('ph-col');
+  show('dl-col'); show('color-next');
+
+  // Adım 3 kaynak önizlemesini de güncelle
+  const cp = document.getElementById('c-src-prev');
+  cp.width = src.width; cp.height = src.height;
+  cp.getContext('2d').putImageData(id, 0, 0);
+  show('c-src-prev'); hide('ph-src-prev');
+
+  // Renk listesini gerçek dağılımdan çıkar — ama çok renk varsa
+  // UI'ı kilitlememek için ilk 50'yi göster.
+  const counts = {};
+  for(let i = 0; i < d.length; i += 4) {
+    const h = rgbHex(d[i], d[i+1], d[i+2]);
+    counts[h] = (counts[h] || 0) + 1;
+  }
+  const total = Object.values(counts).reduce((a,b)=>a+b, 0);
+  const sorted = Object.entries(counts).sort((a,b)=>b[1]-a[1]);
+  const topN = sorted.slice(0, 50);
+
+  const list = document.getElementById('color-list');
+  list.innerHTML = '';
+
+  if(sorted.length > 50) {
+    const note = document.createElement('div');
+    note.style.cssText = 'font-size:12px;color:var(--text3);padding:8px 4px 10px;line-height:1.5;';
+    note.innerHTML = `<strong>${sorted.length.toLocaleString('tr-TR')}</strong> benzersiz renk bulundu. En çok kullanılan ilk 50 gösteriliyor — tümü sonraki adıma taşındı.`;
+    list.appendChild(note);
+  }
+
+  topN.forEach(([hex, cnt]) => {
+    const pct = ((cnt/total)*100).toFixed(2);
+    const el = document.createElement('div');
+    el.className = 'color-item'; el.title = 'Kopyala: ' + hex;
+    el.innerHTML = `<div class="color-dot" style="background:${hex}"></div><span class="color-hex">${hex}</span><span class="color-pct">${pct}%</span><span class="copy-tag">kopyala</span>`;
+    el.onclick = () => { navigator.clipboard.writeText(hex); showToast('Kopyalandı: '+hex); };
+    list.appendChild(el);
+  });
+
+  markDone(1);
+  const lbl = document.getElementById('pix-source-label');
+  if(lbl) lbl.textContent = 'orijinal görsel (renk indirgeme atlandı)';
+
+  showToast('Orijinal ' + sorted.length.toLocaleString('tr-TR') + ' renk korundu');
 }
 
 function kMeans(pixels, k, iters) {
